@@ -10,7 +10,18 @@
     Plotly.d3.csv("./data/sp500.csv", function(err, rows){
 
     function unpack(rows, key) {
-        return rows.map(function(row) { return row[key]; });
+        return rows.map(function(row) { 
+            if (key=='Date') {
+                parts = row[key].split("-");
+                mydate = new Date(parseInt(("20"+parts[2]), 10),
+                                  parseInt(parts[1], 10),
+                                  parseInt(parts[0], 10));
+                console.log(mydate);
+                return mydate;
+            } else {
+                return row[key]; 
+            }
+        });
     }
 
   
@@ -38,7 +49,7 @@ var layout = {
   title: 'S&P 500 Time Serie with Rangeslider', 
   xaxis: {
     autorange: true, 
-    range: ['01-01-2017', '01-01-2018'], 
+    range: ['2017-01-01', '2018-01-01'], 
     rangeselector: {buttons: [
         {
           count: 1, 
@@ -54,7 +65,7 @@ var layout = {
         }, 
         {step: 'all'}
       ]}, 
-    rangeslider: {range: ['03-01-2000', '29-08-2018']}, 
+    rangeslider: {range: ['2000-01-03', '2018-08-29']}, 
     type: 'date'
   }, 
   yaxis: {
