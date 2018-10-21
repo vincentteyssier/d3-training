@@ -1,0 +1,72 @@
+<head>
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  </head>
+  <body>
+  <!-- Plotly chart will be drawn inside this DIV -->
+  <div id="myDiv"></div>
+    <script>
+    /* JAVASCRIPT CODE GOES HERE */
+    Plotly.d3.csv("./data/sp500.csv", function(err, rows){
+
+    function unpack(rows, key) {
+        return rows.map(function(row) { return row[key]; });
+    }
+
+  
+    var trace1 = {
+        type: "scatter",
+        mode: "lines",
+        name: 'S&P 500 Close',
+        x: unpack(rows, 'Date'),
+        y: unpack(rows, 'Close'),
+        line: {color: 'rgb(255, 70, 131)'}
+    }
+
+    var trace2 = {
+        type: "scatter",
+        mode: "lines",
+        name: 'S&P 500 Open',
+        x: unpack(rows, 'Date'),
+        y: unpack(rows, 'Open'),
+        line: {color: 'rgba(0,0,0, .5)'}
+    }
+
+var data = [trace1, trace2];
+    
+var layout = {
+  title: 'S&P 500 Time Serie with Rangeslider', 
+  xaxis: {
+    autorange: true, 
+    range: ['01-01-2017', '01-01-2018'], 
+    rangeselector: {buttons: [
+        {
+          count: 1, 
+          label: '1m', 
+          step: 'month', 
+          stepmode: 'backward'
+        }, 
+        {
+          count: 6, 
+          label: '6m', 
+          step: 'month', 
+          stepmode: 'backward'
+        }, 
+        {step: 'all'}
+      ]}, 
+    rangeslider: {range: ['03-01-2000', '29-08-2018']}, 
+    type: 'date'
+  }, 
+  yaxis: {
+    autorange: true, 
+    range: [0, 6000], 
+    type: 'linear'
+  }
+};
+
+Plotly.newPlot('myDiv', data, layout);
+})
+
+    </script>
+  </body>
+  </html>
