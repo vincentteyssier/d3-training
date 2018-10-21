@@ -74,7 +74,7 @@
     var data = d3.csv.parse("./data/sp500.csv");
 
     color.domain(d3.keys(data[0]).filter(function(key) {
-      return key !== "date";
+      return key !== "Date";
     }));
 
     data.forEach(function(d) {
