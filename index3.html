@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<meta charset='utf-8'>
+<body>
+<script src='https://d3js.org/d3.v4.min.js'></script>
+<script src="https://d3js.org/d3-selection-multi.v0.4.min.js"></script>
+<script src='https://npmcdn.com/babel-core@5.8.34/browser.min.js'></script>
+<script lang='babel' type='text/babel'>
+  const margin = { top: 20, right: 50, bottom: 30, left: 50 };
+  const width = (window.innerWidth - margin.left - margin.right)*0.8;
+  const height = 500 - margin.top - margin.bottom;
+
+  const parseTime = d3.timeParse('%d-%m-%y');
+  const bisectDate = d3.bisector(d => d.Date).left;
+  const formatValue = d3.format(',.2f');
+  const formatCurrency = d => `$${formatValue(d)}`;
+
+  d3.select('body')
+    .style('font', '10px sans-serif');
+
+  const x = d3.scaleTime()
+    .range([0, width]);
+
+  const y = d3.scaleLinear()
+    .range([height, 0]);
+
+  const line = d3.line()
+    .x(d => x(d.Date))
+    .y(d => y(d.Close))
+    .curve(d3.curveCatmullRom);
+    //.curve(d3.curveMonotoneX);
+
+  var area = d3.area()
+    .curve(d3.curveMonotoneX)
+    .x(function(d) { return x(d.Date); })
+    .y0(height)
+    .y1(function(d) { return y(d.Close); });
+
+  const svg = d3.select('body').append('svg')
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom)
+    .append('g')
+      .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+  var defs = svg.append("defs");
+    
+  var gradient = defs.append("linearGradient")
+    .attr("id", "svgGradient")
+    .attr("x1", "50%")
+    .attr("x2", "50%")
+    .attr("y1", "0%")
+    .attr("y2", "100%");
+
+  gradient.append("stop")
+    .attr('class', 'start')
+    .attr("offset", "0%")
+    .attr("stop-color", "rgb(34, 25, 160)")
+    .attr("stop-opacity", 1);
+
+  gradient.append("stop")
+    .attr('class', 'end')
+    .attr("offset", "100%")
+    .attr("stop-color", "red")
+    .attr("stop-opacity", 1);
+
+  d3.csv('./data/sp500.csv', type, (error, data) => {
+    if (error) throw error;
+
+    data.sort((a, b) => a.Date - b.Date);
+
+    x.domain([data[0].Date, data[data.length - 1].Date]);
+    y.domain(d3.extent(data, d => d.Close));
+
+    svg.append('g')
+      .attr('class', 'x axis axis--x')
+      .attr('transform', `translate(0, ${height})`)
+      .call(d3.axisBottom(x));
+
+    svg.append('g')
+      .attr('class', 'y axis axis--y')
+      .call(d3.axisLeft(y))
+      .append('text')
+        .attr('class', 'axis-title')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', 6)
+        .attr('dy', '.71em')
+        .style('text-anchor', 'end')
+        .text('Price ($)');
+
+    // style the axes
+    d3.selectAll('.axis path')
+      .styles({
+        fill: 'none',
+        stroke: '#000',
+        'shape-rendering': 'crispEdges'
+      });
+
+    d3.selectAll('.axis line')
+      .styles({
+        fill: 'none',
+        stroke: '#000',
+        'shape-rendering': 'crispEdges'
+      });
+
+    svg.append('path')
+      .datum(data)
+      .attr('class', 'line')
+      .attr('d', line);
+
+    svg.append("area")
+      .datum(data)
+      .attr("class", "area")
+      .attr("d", area)
+      .attr("fill", "url(#svgGradient)");
+
+    const focus = svg.append('g')
+      .attr('class', 'focus')
+      .style('display', 'none');
+
+    focus.append('circle')
+      .attr('r', 7);
+
+    focus.append('line')
+      .classed('x', true);
+
+    focus.append('line')
+      .classed('y', true);
+
+    focus.append('text')
+      .attr('x', 9)
+      .attr('dy', '.35em');
+
+    svg.append('rect')
+      .attr('class', 'overlay')
+      .attr('width', width)
+      .attr('height', height)
+      .on('mouseover', () => focus.style('display', null))
+      .on('mouseout', () => focus.style('display', 'none'))
+      .on('mousemove', mousemove);
+
+    d3.selectAll('.line')
+      .styles({
+        fill: 'none',
+        stroke: 'steelblue',
+        'stroke-width': '1px'
+      });
+
+    d3.select('.overlay')
+      .styles({
+        fill: 'none',
+        'pointer-events': 'all'
+      });
+
+    d3.selectAll('.focus')
+      .style('opacity', 0.7);
+
+    d3.selectAll('.focus circle')
+      .styles({
+        fill: 'none',
+        stroke: 'black',
+      })
+      .attr("stroke-width", "1px");
+
+    d3.selectAll('.focus line')
+      .styles({
+        fill: 'none',
+        'stroke': 'black',
+        'opacity': '0.75'
+      })
+      .attr("stroke-width", "1px");
+
+    function mousemove() {
+      const x0 = x.invert(d3.mouse(this)[0]);
+      const i = bisectDate(data, x0, 1);
+      const d0 = data[i - 1];
+      const d1 = data[i];
+      const d = x0 - d0.Date > d1.Date - x0 ? d1 : d0;
+      focus.attr('transform', `translate(${x(d.Date)}, ${y(d.Close)})`);
+      focus.select('line.x')
+        .attr('x1', 0)
+        .attr('x2', -x(d.Date))
+        .attr('y1', 0)
+        .attr('y2', 0);
+
+      focus.select('line.y')
+        .attr('x1', 0)
+        .attr('x2', 0)
+        .attr('y1', 0)
+        .attr('y2', height - y(d.Close));
+
+      focus.select('text').text(formatCurrency(d.Close));
+    }
+  });
+
+  function type(d) {
+    d.Date = parseTime(d.Date);
+    d.Close = +d.Close;
+    return d;
+  }
+</script>
